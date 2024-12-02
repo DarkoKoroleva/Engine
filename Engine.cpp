@@ -8,9 +8,9 @@ void Engine::registerCommand(Wrapper* wrapper, const std::string& commandName) {
     commands[commandName] = wrapper;
 }
 
-std::any Engine::execute(const std::string& commandName, const std::unordered_map<std::string, std::any>& args) {
+std::any Engine::execute(const std::string& commandName, DefaultArgs&& args) {
     if (!commands.contains(commandName)) {
         throw std::invalid_argument("Command not found: " + commandName);
     }
-    return commands[commandName]->execute(args);
+    return commands[commandName]->execute(std::move(args));
 }

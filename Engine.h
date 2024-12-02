@@ -10,7 +10,7 @@ private:
 public:
     void registerCommand(Wrapper* wrapper, const std::string& commandName);
 
-    std::any execute(const std::string& commandName, const std::unordered_map<std::string, std::any>& args);
+    std::any execute(const std::string& commandName, DefaultArgs&& args);
 };
 
 #endif //ENGINE_H
