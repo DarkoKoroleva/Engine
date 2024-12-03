@@ -17,9 +17,9 @@ class Subject {
         return x + y;
     }
 
-    int f4 (int x1, int y1) const {
+    void f4 (int x1, int y1) {
         std::cout << "x = " << x << " x1 = " << x1 << " y = " << y << std::endl;
-        return 11;
+        //return 11;
     }
 };
 
@@ -29,12 +29,6 @@ int main()
     Wrapper wrapper(&subj, &Subject::f3, {{"arg1", 0}, {"arg2", 0}});
     Engine engine;
     engine.registerCommand(&wrapper, "command1");
-
-    try {
-        auto result = std::any_cast<int>(engine.execute("command1", {{"arg1", 4}, {"arg2", 5}}));
-        std::cout << result << std::endl;
-    } catch (const std::exception& ex) {
-        std::cerr << ex.what() << std::endl;
-    }
+    engine.execute("command1", {{"arg1", 4}, {"arg2", 5}});
 }
 
