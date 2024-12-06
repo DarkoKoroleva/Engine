@@ -6,13 +6,15 @@
 #include <functional>
 #include <any>
 #include <vector>
+#include <utility>
+#include "TextEditor.h"
 
 using DefaultArgs = std::unordered_map<std::string, std::any>;
 
 class WrapperBase {
 public:
     virtual ~WrapperBase() = default;
-    virtual void execute (const std::unordered_map<std::string, std::any>& args) = 0;
+    virtual void execute (const DefaultArgs& args) = 0;
 };
 
 
@@ -20,18 +22,21 @@ template <typename T, typename Ret, typename ...Args>
 class Wrapper : public WrapperBase {
 private:
     T* obj;
+    //Ret (T::*func)(Args...); //for debug
     std::function<Ret(const DefaultArgs&)> method;
     DefaultArgs defaultArgs;
 public:
-    Wrapper(T* obj, Ret (T::*method)(Args...), DefaultArgs defaultArgs)
+    Wrapper(T* obj, Ret (T::*func)(Args...), const DefaultArgs& defaultArgs)
             : obj(obj),
-              method([this, obj, method](const DefaultArgs& args) -> Ret {
-                  return call(obj, method, args);
-              }),
-              defaultArgs(std::move(defaultArgs)) {}
+            //func(func), //for debug
+            method([this, obj, func](const DefaultArgs& args) -> Ret {
+                return call(obj, func, args);
+            }),
+            defaultArgs(std::move(defaultArgs)) {}
 
-    void execute(const std::unordered_map<std::string, std::any>& args) override {
+    void execute(const DefaultArgs& args) override {
         if (method) {
+            //call(obj, func, args); //for debug
             method(args);
         } else {
             throw std::runtime_error("Method not initialized.");
@@ -40,35 +45,36 @@ public:
 
     template <std::size_t... Is>
     static Ret invoke(T* obj, Ret (T::*method)(Args...), const std::tuple<Args...>& arguments, std::index_sequence<Is...>) {
+        //std::cout << "Extracted value: " << std::get<0>(arguments) << std::endl;
         return (obj->*method)(std::get<Is>(arguments)...);
     }
 
-    static Ret call(void* obj, Ret (T::*method)(Args...), const std::unordered_map<std::string, std::any>& args) {
-        auto* typedObj = static_cast<T*>(obj);
+    Ret call(T* obj, Ret (T::*method)(Args...), const DefaultArgs& args) {
         std::tuple<Args...> arguments = collectArguments(args);
-        return invoke(typedObj, method, arguments, std::index_sequence_for<Args...>());
+        return invoke(obj, method, arguments, std::index_sequence_for<Args...>());
     }
 
 
-    static std::tuple<Args...> collectArguments(const std::unordered_map<std::string, std::any>& args) {
+    std::tuple<Args...> collectArguments(const DefaultArgs& args) {
         std::vector<std::string> keys;
         std::index_sequence<sizeof...(Args)> index;
         keys.reserve(args.size());
-        for (const auto& [key, value] : args) {
+        for (const auto& [key, value] : defaultArgs) {
             keys.emplace_back(key);
         }
         return collectArgumentsHelper(args, keys, std::make_index_sequence<sizeof...(Args)>());
     }
 
     template <std::size_t... Is>
-    static std::tuple<Args...> collectArgumentsHelper(const std::unordered_map<std::string, std::any>& args,
+    static std::tuple<Args...> collectArgumentsHelper(const DefaultArgs& args,
                                                       const std::vector<std::string>& keys,
                                                       std::index_sequence<Is...>) {
-        return std::make_tuple(getArgument<Args>(args, keys[Is])...);
+        std::tuple tuple = std::make_tuple(getArgument<Args>(args, keys[Is])...); // FIXME if Args... = const&, then we get a hanging link & undefined behavior next, oops
+        return tuple;
     }
 
     template<typename Temp>
-    static Temp getArgument(const std::unordered_map<std::string, std::any>& args, const std::string& key) {
+    static Temp getArgument(const DefaultArgs& args, const std::string& key) {
         if (args.contains(key)) {
             return std::any_cast<Temp>(args.at(key));
         }
