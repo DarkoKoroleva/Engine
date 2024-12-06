@@ -44,9 +44,9 @@ int main()
     engine.execute("findPhrase", {{"oldWord", std::string("Bye")}});
 
 
-//    Wrapper wrapper3(&editor, &TextEditor::toUpperSentences, {}); //TODO: wrap function without arguments
-//    engine.registerCommand(&wrapper3, "toUpperSentences");
-//    engine.execute("toUpperSentences", {});
+    Wrapper wrapper3(&editor, &TextEditor::toUpperSentences, {});
+    engine.registerCommand(&wrapper3, "toUpperSentences");
+    engine.execute("toUpperSentences", {});
 
     Wrapper wrapper(&editor, &TextEditor::replaceWord, {{"oldWord", std::string("Bye")}, {"newWord", std::string("Hi")}});
     engine.registerCommand(&wrapper, "replaceWord");

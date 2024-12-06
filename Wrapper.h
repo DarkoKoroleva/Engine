@@ -43,6 +43,7 @@ public:
         }
     }
 
+private:
     template <std::size_t... Is>
     static Ret invoke(T* obj, Ret (T::*method)(Args...), const std::tuple<Args...>& arguments, std::index_sequence<Is...>) {
         //std::cout << "Extracted value: " << std::get<0>(arguments) << std::endl;
@@ -50,8 +51,12 @@ public:
     }
 
     Ret call(T* obj, Ret (T::*method)(Args...), const DefaultArgs& args) {
-        std::tuple<Args...> arguments = collectArguments(args);
-        return invoke(obj, method, arguments, std::index_sequence_for<Args...>());
+        if constexpr (sizeof...(Args) == 0) {
+            return (obj->*method)();
+        } else {
+            std::tuple<Args...> arguments = collectArguments(args);
+            return invoke(obj, method, arguments, std::index_sequence_for<Args...>());
+        }
     }
 
 
